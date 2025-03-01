@@ -1,101 +1,434 @@
-import Image from "next/image";
+// "use client";
+
+// import { useState } from "react";
+// import { Button } from "@/components/ui/button";
+// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// import { Label } from "@/components/ui/label";
+// import { Textarea } from "@/components/ui/textarea";
+// import { useDropzone } from "react-dropzone";
+// import { GoogleGenerativeAI } from "@google/generative-ai";
+
+// export default function Home() {
+//   const [file, setFile] = useState<File | null>(null);
+//   const [extractedText, setExtractedText] = useState("");
+//   const [summary, setSummary] = useState("");
+//   const [keyDetails, setKeyDetails] = useState<string[]>([]);
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState<string | null>(null);
+
+//   
+//   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_GEMINI_API_KEY;
+//   if (!apiKey) {
+//     console.error("API key is missing. Please check your .env.local file.");
+//   }
+//   const genAI = new GoogleGenerativeAI(apiKey || "");
+
+//   const onDrop = (acceptedFiles: File[]) => {
+//     setError(null);
+//     if (acceptedFiles.length === 0) {
+//       setError("No files were accepted. Please upload a PDF.");
+//       return;
+//     }
+    
+//     const selectedFile = acceptedFiles[0];
+//     if (selectedFile.type !== "application/pdf") {
+//       setError("Please upload a PDF file only.");
+//       return;
+//     }
+    
+//     setFile(selectedFile);
+//     console.log("File selected:", selectedFile.name);
+//   };
+
+//   const { getRootProps, getInputProps, isDragActive } = useDropzone({
+//     onDrop,
+//     accept: { "application/pdf": [".pdf"] },
+//     maxFiles: 1,
+//     multiple: false,
+//   });
+
+//   const extractText = async () => {
+//     if (!file) {
+//       setError("No file selected. Please upload a PDF first.");
+//       return;
+//     }
+
+//     setLoading(true);
+//     setError(null);
+//     try {
+//       // Read file as ArrayBuffer
+//       const arrayBuffer = await file.arrayBuffer();
+//       const base64String = Buffer.from(arrayBuffer).toString("base64");
+
+//       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      
+//       const prompt = `
+//         Analyze this PDF document and provide:
+//         1. The full extracted text
+//         2. A brief summary (2-3 sentences) of what the document is about
+//         3. 3-5 key details or facts from the document as concise bullet points
+        
+//         Format your response as:
+//         [FULL_TEXT]
+//         Full extracted text here...
+//         [/FULL_TEXT]
+        
+//         [SUMMARY]
+//         Summary here...
+//         [/SUMMARY]
+        
+//         [KEY_DETAILS]
+//         - Detail 1
+//         - Detail 2
+//         - Detail 3
+//         [/KEY_DETAILS]
+//       `;
+      
+//       const fileData = {
+//         inlineData: {
+//           data: base64String,
+//           mimeType: "application/pdf",
+//         },
+//       };
+
+//       const result = await model.generateContent([prompt, fileData]);
+//       const responseText = result.response.text();
+
+//       
+//       const fullTextMatch = responseText.match(/\[FULL_TEXT\]([\s\S]*?)\[\/FULL_TEXT\]/);
+//       const summaryMatch = responseText.match(/\[SUMMARY\]([\s\S]*?)\[\/SUMMARY\]/);
+//       const keyDetailsMatch = responseText.match(/\[KEY_DETAILS\]([\s\S]*?)\[\/KEY_DETAILS\]/);
+
+//       setExtractedText(fullTextMatch ? fullTextMatch[1].trim() : "No text extracted");
+//       setSummary(summaryMatch ? summaryMatch[1].trim() : "No summary generated");
+//       setKeyDetails(
+//         keyDetailsMatch
+//           ? keyDetailsMatch[1]
+//               .trim()
+//               .split("\n")
+//               .map((item) => item.trim().replace(/^- /, ""))
+//               .filter((item) => item)
+//           : ["No key details extracted"]
+//       );
+//     } catch (error) {
+//       console.error("Extraction error:", error);
+//       setError(`Failed to process PDF: ${error instanceof Error ? error.message : "Unknown error"}`);
+//       setExtractedText("");
+//       setSummary("");
+//       setKeyDetails([]);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   return (
+//     <div className="container mx-auto p-4 max-w-3xl">
+//       <Card>
+//         <CardHeader>
+//           <CardTitle>PDF Text Extractor</CardTitle>
+//         </CardHeader>
+//         <CardContent className="space-y-6">
+//           <div
+//             {...getRootProps()}
+//             className={`border-2 border-dashed p-8 text-center rounded-lg cursor-pointer ${
+//               isDragActive ? "border-primary bg-primary/10" : "border-gray-300"
+//             }`}
+//           >
+//             <input {...getInputProps()} />
+//             {file ? (
+//               <p className="text-sm">Selected: {file.name}</p>
+//             ) : (
+//               <p className="text-sm">
+//                 Drag and drop a PDF here, or click to select
+//               </p>
+//             )}
+//           </div>
+
+//           {error && (
+//             <p className="text-red-500 text-sm">{error}</p>
+//           )}
+
+//           <Button
+//             onClick={extractText}
+//             disabled={!file || loading}
+//             className="w-full"
+//           >
+//             {loading ? "Processing..." : "Extract & Summarize"}
+//           </Button>
+
+//           {(extractedText || summary || keyDetails.length > 0) && (
+//             <div className="space-y-6">
+//               {summary && (
+//                 <div className="space-y-2">
+//                   <Label>Summary:</Label>
+//                   <div className="p-3 bg-gray-50 rounded-lg text-sm">
+//                     {summary}
+//                   </div>
+//                 </div>
+//               )}
+
+//               {keyDetails.length > 0 && (
+//                 <div className="space-y-2">
+//                   <Label>Key Details:</Label>
+//                   <ul className="list-disc pl-5 text-sm bg-gray-50 p-3 rounded-lg">
+//                     {keyDetails.map((detail, index) => (
+//                       <li key={index}>{detail}</li>
+//                     ))}
+//                   </ul>
+//                 </div>
+//               )}
+
+//               {extractedText && (
+//                 <div className="space-y-2">
+//                   <Label>Full Extracted Text:</Label>
+//                   <Textarea
+//                     value={extractedText}
+//                     readOnly
+//                     className="min-h-[200px] font-mono text-sm"
+//                   />
+//                 </div>
+//               )}
+//             </div>
+//           )}
+//         </CardContent>
+//       </Card>
+//     </div>
+//   );
+// }
+
+
+"use client";
+
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useDropzone } from "react-dropzone";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+type DocumentResult = {
+  fileName: string;
+  fullText: string;
+  summary: string;
+  keyDetails: string[];
+};
+
+type VerificationResult = {
+  field: string;
+  matches: boolean;
+  values: string[];
+};
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [files, setFiles] = useState<File[]>([]);
+  const [results, setResults] = useState<DocumentResult[]>([]);
+  const [verification, setVerification] = useState<VerificationResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_GEMINI_API_KEY;
+  if (!apiKey) {
+    console.error("API key is missing. Please check your .env.local file.");
+  }
+  const genAI = new GoogleGenerativeAI(apiKey || "");
+
+  const onDrop = (acceptedFiles: File[]) => {
+    setError(null);
+    const pdfFiles = acceptedFiles.filter(file => file.type === "application/pdf");
+    if (pdfFiles.length !== acceptedFiles.length) {
+      setError("Only PDF files are accepted.");
+    }
+    if (pdfFiles.length < 2) {
+      setError("Please upload at least two PDF files for comparison.");
+      return;
+    }
+    setFiles(pdfFiles);
+    console.log("Files selected:", pdfFiles.map(f => f.name));
+  };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { "application/pdf": [".pdf"] },
+    multiple: true,
+  });
+
+  const processDocuments = async () => {
+    if (files.length < 2) {
+      setError("Please upload at least two PDF files.");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setResults([]);
+    setVerification([]);
+
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const prompt = `
+        For this PDF document, provide:
+        1. The full extracted text
+        2. A brief summary (2-3 sentences) of what the document is about
+        3. Extract key details including: Name, Address, Date of Birth, Identification Number (or any unique ID)
+        4. ignore capitalization
+        
+        Format your response as:
+        [FULL_TEXT]
+        Full extracted text here...
+        [/FULL_TEXT]
+        
+        [SUMMARY]
+        Summary here...
+        [/SUMMARY]
+        
+        [KEY_DETAILS]
+        - Name: [extracted name]
+        - Address: [extracted address]
+        - Date of Birth: [extracted DOB]
+        - Identification Number: [extracted ID]
+        [/KEY_DETAILS]
+      `;
+
+      const docResults: DocumentResult[] = [];
+      for (const file of files) {
+        const arrayBuffer = await file.arrayBuffer();
+        const base64String = Buffer.from(arrayBuffer).toString("base64");
+
+        const fileData = {
+          inlineData: {
+            data: base64String,
+            mimeType: "application/pdf",
+          },
+        };
+
+        const result = await model.generateContent([prompt, fileData]);
+        const responseText = result.response.text();
+
+        const fullTextMatch = responseText.match(/\[FULL_TEXT\]([\s\S]*?)\[\/FULL_TEXT\]/);
+        const summaryMatch = responseText.match(/\[SUMMARY\]([\s\S]*?)\[\/SUMMARY\]/);
+        const keyDetailsMatch = responseText.match(/\[KEY_DETAILS\]([\s\S]*?)\[\/KEY_DETAILS\]/);
+
+        const keyDetails = keyDetailsMatch
+          ? keyDetailsMatch[1]
+              .trim()
+              .split("\n")
+              .map((item) => item.trim().replace(/^- /, ""))
+              .filter((item) => item)
+          : ["No key details extracted"];
+
+        docResults.push({
+          fileName: file.name,
+          fullText: fullTextMatch ? fullTextMatch[1].trim() : "No text extracted",
+          summary: summaryMatch ? summaryMatch[1].trim() : "No summary generated",
+          keyDetails,
+        });
+      }
+
+      setResults(docResults);
+
+
+      const verifyFields = ["Name", "Address", "Date of Birth", "Identification Number"];
+      const verificationResults: VerificationResult[] = [];
+
+      for (const field of verifyFields) {
+        const values = docResults.map(result => {
+          const detail = result.keyDetails.find(d => d.startsWith(`${field}:`));
+          return detail ? detail.replace(`${field}: `, "").trim() : "Not found";
+        });
+
+        const matches = values.every((val, _, arr) => val === arr[0] && val !== "Not found");
+        verificationResults.push({ field, matches, values });
+      }
+
+      setVerification(verificationResults);
+    } catch (error) {
+      console.error("Processing error:", error);
+      setError(`Failed to process documents: ${error instanceof Error ? error.message : "Unknown error"}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="container mx-auto p-4 max-w-4xl">
+      <Card>
+        <CardHeader>
+          <CardTitle>Multiple PDF Extractor & Verifier</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div
+            {...getRootProps()}
+            className={`border-2 border-dashed p-8 text-center rounded-lg cursor-pointer ${
+              isDragActive ? "border-primary bg-primary/10" : "border-gray-300"
+            }`}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            <input {...getInputProps()} />
+            {files.length > 0 ? (
+              <p className="text-sm">Selected: {files.map(f => f.name).join(", ")}</p>
+            ) : (
+              <p className="text-sm">
+                Drag and drop multiple PDFs here, or click to select (minimum 2)
+              </p>
+            )}
+          </div>
+
+          {error && (
+            <p className="text-red-500 text-sm">{error}</p>
+          )}
+
+          <Button
+            onClick={processDocuments}
+            disabled={files.length < 2 || loading}
+            className="w-full"
           >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+            {loading ? "Processing..." : "Extract & Verify"}
+          </Button>
+
+          {results.length > 0 && (
+            <div className="space-y-8">
+              <div className="space-y-4">
+                <Label className="text-lg">Verification Results:</Label>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  {verification.map((v, index) => (
+                    <p key={index} className={`text-sm ${v.matches ? "text-green-600" : "text-red-600"}`}>
+                      <strong>{v.field}:</strong> {v.matches ? "Matches" : "Does not match"} 
+                      ({v.values.join(" | ")})
+                    </p>
+                  ))}
+                </div>
+              </div>
+
+              {results.map((result, index) => (
+                <div key={index} className="space-y-4">
+                  <h3 className="text-lg font-semibold">{result.fileName}</h3>
+                  <div className="space-y-2">
+                    <Label>Summary:</Label>
+                    <div className="p-3 bg-gray-50 rounded-lg text-sm">{result.summary}</div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Key Details:</Label>
+                    <ul className="list-disc pl-5 text-sm bg-gray-50 p-3 rounded-lg">
+                      {result.keyDetails.map((detail, i) => (
+                        <li key={i}>{detail}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Full Extracted Text:</Label>
+                    <Textarea
+                      value={result.fullText}
+                      readOnly
+                      className="min-h-[150px] font-mono text-sm"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
